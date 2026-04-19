@@ -138,7 +138,7 @@
       <li class="px-4 py-2"><small class="nav-text">Main</small></li>
       <li><a class="nav-link" href="/inapp-1.0.0/src/Frontend/dashboard.php"><i class="ti ti-home"></i><span
             class="nav-text">Dashboard</span></a></li>
-        <li class="px-4 py-2"><small class="nav-text">Enregistrements</small></li>
+        <li class="px-4 py-2"><small class="nav-text">Enr</small></li>
       <li><a class="nav-link" href="/inapp-1.0.0/src/Frontend/category/index_category.php"><i class="ti ti-category"></i><span
             class="nav-text"> Add Category</span></a></li>
       <li><a class="nav-link" href="/inapp-1.0.0/src/Frontend/produits/index_produit.php"><i class="ti ti-package"></i><span class="nav-text">Add
