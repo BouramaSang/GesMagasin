@@ -1,4 +1,4 @@
- <?php
+<?php
 // src/Frontend/commandes/view_commande.php
 require_once '../../config/app.php';
 requireAdmin();
@@ -35,12 +35,9 @@ if (!$commande) {
     exit();
 }
 
-// Récupérer les produits de la commande
+// Récupérer les produits
 $stmt = $pdo->prepare("
-    SELECT 
-        d.*,
-        p.nomp as produit_nom,
-        p.image as produit_image
+    SELECT d.*, p.nomp as produit_nom, p.image as produit_image
     FROM detail_commande d
     LEFT JOIN produits p ON d.produit_id = p.id
     WHERE d.commande_id = ?
@@ -48,7 +45,6 @@ $stmt = $pdo->prepare("
 $stmt->execute([$id]);
 $details = $stmt->fetchAll();
 
-// Calculer le total
 $total = 0;
 foreach ($details as $d) {
     $total += $d['quantite'] * $d['prix_unitaire'];
@@ -85,7 +81,6 @@ include '../../sidebar.php';
 </head>
 <body>
 
-<!-- TOPBAR avec toggle sidebar -->
 <nav id="topbar" class="navbar bg-white border-bottom fixed-top topbar px-3">
     <button id="toggleBtn" class="d-none d-lg-inline-flex btn btn-light btn-icon btn-sm">
         <i class="ti ti-layout-sidebar-left-expand"></i>
@@ -109,7 +104,17 @@ include '../../sidebar.php';
 <main id="content" class="content py-10">
     <div class="container-fluid px-4">
         
-        <!-- En-tête -->
+        <?php if(isset($_GET['facture']) && $_GET['facture'] == 1 && $commande['facture_id']): ?>
+            <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+                <i class="fa-solid fa-check-circle me-2"></i>
+                <strong>Commande marquée comme livrée !</strong> La facture a été générée automatiquement.
+                <a href="view_facture.php?id=<?= $commande['facture_id'] ?>" class="alert-link ms-2">
+                    <i class="fa-solid fa-file-pdf"></i> Voir la facture
+                </a>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+        
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
             <div>
                 <h1 class="fs-3 fw-bold mb-1">
@@ -123,7 +128,6 @@ include '../../sidebar.php';
             </a>
         </div>
 
-        <!-- Infos commande -->
         <div class="row mb-4">
             <div class="col-md-6">
                 <div class="info-card">
@@ -147,9 +151,9 @@ include '../../sidebar.php';
                     <p class="mb-0">
                         <strong>Facture :</strong> 
                         <?php if($commande['facture_id']): ?>
-                            <a href="view_facture.php?id=<?= $commande['facture_id'] ?>" class="text-decoration-none">
-                                <i class="fa-solid fa-file-pdf me-1" style="color: #dc3545;"></i>
-                                <?= htmlspecialchars($commande['facture_numero']) ?>
+                            <a href="view_facture.php?id=<?= $commande['facture_id'] ?>" class="btn btn-sm btn-outline-danger mt-1">
+                                <i class="fa-solid fa-file-pdf me-1"></i>
+                                📄 Voir la facture #<?= $commande['facture_id'] ?>
                             </a>
                         <?php else: ?>
                             <span class="text-secondary">Non générée</span>
@@ -159,7 +163,6 @@ include '../../sidebar.php';
             </div>
         </div>
 
-        <!-- Tableau des produits -->
         <div class="card">
             <div class="card-header bg-white">
                 <h5 class="mb-0"><i class="fa-solid fa-box me-2" style="color: var(--primary);"></i> Produits commandés</h5>
@@ -186,21 +189,43 @@ include '../../sidebar.php';
             </div>
         </div>
 
-        <!-- Actions (changement de statut) -->
-        <div class="mt-4 d-flex justify-content-end gap-2 <?= $commande['statut'] === 'livree' ? 'd-none' : '' ?>">
-            <?php if($commande['statut'] === 'en_attente'): ?>
-                <a href="update_status.php?id=<?= $id ?>&status=livree" class="btn btn-success" onclick="return confirm('Marquer comme livrée ?')">
+        <!-- Boutons d'action TOUJOURS VISIBLES avec confirmations adaptées -->
+        <div class="mt-4 d-flex justify-content-end gap-2 flex-wrap">
+            
+            <?php if($commande['statut'] !== 'livree'): ?>
+                <!-- Passer à livrée -->
+                <a href="update_status.php?id=<?= $id ?>&status=livree" 
+                   class="btn btn-success" 
+                   onclick="return confirm('Marquer cette commande comme livrée ? Une facture sera générée automatiquement.')">
                     <i class="fa-solid fa-check-circle"></i> Marquer livrée
                 </a>
-                <a href="update_status.php?id=<?= $id ?>&status=annulee" class="btn btn-danger" onclick="return confirm('Annuler cette commande ?')">
-                    <i class="fa-solid fa-times"></i> Annuler
+            <?php endif; ?>
+            
+            <?php if($commande['statut'] !== 'annulee'): ?>
+                <!-- Passer à annulée -->
+                <a href="update_status.php?id=<?= $id ?>&status=annulee" 
+                   class="btn btn-danger" 
+                   onclick="return confirm('⚠️ Annuler cette commande ?\n\n<?= $commande['statut'] === 'livree' ? 'Le stock sera restauré et la facture supprimée.' : '' ?>')">
+                    <i class="fa-solid fa-ban"></i> Annuler
                 </a>
             <?php endif; ?>
+            
+            <?php if($commande['statut'] !== 'en_attente' && $commande['statut'] !== 'en_attente'): ?>
+                <!-- Repasser en attente -->
+                <a href="update_status.php?id=<?= $id ?>&status=en_attente" 
+                   class="btn btn-warning" 
+                   onclick="return confirm('⚠️ Repasser cette commande en "En attente" ?\n\n<?= $commande['statut'] === 'livree' ? 'La facture sera supprimée.' : '' ?>')">
+                    <i class="fa-solid fa-undo"></i> Repasser en attente
+                </a>
+            <?php endif; ?>
+            
+            <!-- Modifier (toujours possible) -->
             <?php if($commande['statut'] !== 'livree'): ?>
                 <a href="edit_commande.php?id=<?= $id ?>" class="btn" style="background: var(--warning); color: white;">
                     <i class="fa-solid fa-pen"></i> Modifier
                 </a>
             <?php endif; ?>
+            
         </div>
     </div>
 </main>

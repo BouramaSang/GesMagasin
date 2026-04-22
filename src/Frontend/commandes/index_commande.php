@@ -12,6 +12,7 @@ $stmt = $pdo->query("
         c.date_commande,
         c.statut,
         c.total_ttc as amount,
+        c.facture_id,
         CONCAT(cl.prenom, ' ', cl.nomc) as clientName,
         cl.tel as clientTel,
         COALESCE(GROUP_CONCAT(DISTINCT CONCAT(p.nomp, ' (', d.quantite, ')') SEPARATOR ', '), 'Aucun produit') as produits
@@ -238,7 +239,17 @@ include '../../sidebar.php';
 
         <div class="table-container">
             <table class="table">
-                <thead><tr><th style="width:40px"><input type="checkbox" id="selectAllCheckbox"></th><th>N° Commande</th><th>Client</th><th>Date</th><th>Produits</th><th>Total</th><th>Statut</th><th>Actions</th></tr></thead>
+                <thead><tr><th style="width:40px"><input type="checkbox" id="selectAllCheckbox"></th>
+                <th>N° Commande</th>
+                <th>Client</th>
+                <th>Date</th>
+                <th>Produits</th>
+                <th>Total</th>
+                <th>Statut</th>
+                <th>Facture</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
                 <tbody id="tableBody"></tbody>
             </table>
         </div>
@@ -288,6 +299,16 @@ function renderTable() {
     } else {
         paginated.forEach(o => {
             let productsTags = o.produits ? o.produits.split(',').map(p => `<span class="product-tag">${escapeHtml(p.trim())}</span>`).join('') : '-';
+             // Bouton facture
+     let factureBtn = '';
+if (o.statut === 'livree' && o.facture_id) {
+    factureBtn = `<a href="view_facture.php?id=${o.facture_id}" class="btn btn-sm btn-outline-danger" title="Voir facture">
+                    <i class="fa-regular fa-file-pdf"></i> Facture
+                  </a>`;
+} else {
+    factureBtn = '<span class="text-secondary">-</span>';
+}
+    
             tbody.innerHTML += `
                 <tr class="order-row">
                     <td><input type="checkbox" class="orderCheckbox" value="${o.id}"></td>
@@ -297,6 +318,7 @@ function renderTable() {
                     <td>${productsTags}</td>
                     <td class="fw-bold text-primary">${formatMoney(o.amount)}</td>
                     <td style="white-space:nowrap;">${getBadge(o.statut)}<select class="status-select" data-id="${o.id}" data-old="${o.statut}"><option value="">Changer</option><option value="en_attente" ${o.statut === 'en_attente' ? 'selected' : ''}>En attente</option><option value="livree" ${o.statut === 'livree' ? 'selected' : ''}>Livrée</option><option value="annulee" ${o.statut === 'annulee' ? 'selected' : ''}>Annulée</option></select></td>
+                       <td class="text-center">${factureBtn}</td>
                     <td><div class="d-flex gap-1"><div class="action-btn view" onclick="viewOrder(${o.id})"><i class="fa-regular fa-eye"></i></div><div class="action-btn edit" onclick="editOrder(${o.id})"><i class="fa-solid fa-pen"></i></div><div class="action-btn delete" onclick="deleteOrder(${o.id})"><i class="fa-solid fa-trash"></i></div></div></td>
                 </tr>
             `;
@@ -319,7 +341,7 @@ function renderTable() {
     updateBulkBar();
 }
 
-async function handleStatusChange(e) {
+ async function handleStatusChange(e) {
     let sel = e.target;
     let id = parseInt(sel.dataset.id);
     let newStatus = sel.value;
@@ -328,15 +350,9 @@ async function handleStatusChange(e) {
     try {
         let res = await fetch(`update_status.php?id=${id}&status=${newStatus}`);
         if (res.ok) {
-            let order = ordersData.find(o => o.id === id);
-            if (order) order.statut = newStatus;
-            sel.dataset.old = newStatus;
             showToast(`Statut mis à jour`);
-            let row = sel.closest('tr');
-            let badgeCell = row.querySelector('td:nth-child(7)');
-            if (badgeCell) badgeCell.innerHTML = getBadge(newStatus) + sel.outerHTML;
-            updateStatsUI(); // Commented out as it's not defined
-            document.querySelectorAll('.status-select').forEach(s => { s.removeEventListener('change', handleStatusChange); s.addEventListener('change', handleStatusChange); });
+            // Recharger la page pour avoir la facture_id
+            location.reload();
         } else showToast(`Erreur`);
     } catch(e) { showToast(`Erreur réseau`); }
     sel.disabled = false;
