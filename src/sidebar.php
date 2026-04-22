@@ -143,8 +143,7 @@
             class="nav-text"> Add Category</span></a></li>
       <li><a class="nav-link" href="/inapp-1.0.0/src/Frontend/produits/index_produit.php"><i class="ti ti-package"></i><span class="nav-text">Add
             Product</span></a></li>
-    <li><a class="nav-link" href="/inapp-1.0.0/src/reports.php"><i class="ti ti-receipt"></i><span class="nav-text">Reports</span></a>
-      </li>
+     <li><a class="nav-link" href="/inapp-1.0.0/src/Frontend/commandes/index_commande.php"><i class="ti ti-ordered-list"></i><span class="nav-text">Commandes</span></a></li>   
     <li><a class="nav-link" href="/inapp-1.0.0/src/404-error.php"><i class="ti ti-alert-circle"></i><span class="nav-text">404 Error</span></a>
       </li>
       <li><a class="nav-link" href="/inapp-1.0.0/src/docs.php"><i class="ti ti-file-text"></i><span class="nav-text">Docs</span></a></li>
